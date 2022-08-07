@@ -1,48 +1,80 @@
 #include "main.h"
+#include <stdlib.h>
+#include <unistd.h>
 
 /**
- * _printf - my printf
- * @format: input constant
- * Return: size of bufer (success) or -1 if fail
+ *get_specifiers - returns pointer to format specifier functions.
+ *@ch:character to be used to find pointer function.
+ *Return:pointer to function that corresponds with specified format or NULL
+ *
  */
-
+int (*get_specifiers(char ch))(va_list)
+{
+	int i;
+	print_formats p[] = {
+		{'c', print_c},
+		{'s', print_s},
+		{'d', print_d},
+		{'i', print_i},
+		{'b', print_b},
+		{'u', print_u},
+		{'o', print_o},
+		{'X', print_X},
+		{'x', print_x},
+		{'S', print_S},
+		{'p', print_p},
+		{'r', print_r},
+		{'R', print_R},
+		{'\0', NULL}
+	};
+	for (i = 0; p[i].op; i++)
+	{
+		if (ch == p[i].op)
+		{
+			return (p[i].func);
+		}
+	}
+	return (NULL);
+}
+/**
+ *_printf - prints formatted output.
+ * @format: the initial string that tell us what is going to be printed
+ * Return: the amount of times we write to stdout or -1
+ */
 int _printf(const char *format, ...)
 {
-	if (format != NULL)
+	int i, count;
+
+	int (*f)(va_list);
+
+	va_list args;
+
+	if (format == NULL)
+		return (-1);
+
+	va_start(args, format);
+	i = count = 0;
+
+	while (format[i] != '\0')
 	{
-		va_list argu;
-		unsigned int i;
-
-		char *buf, *temp_str;
-
-		va_start(argu, format);
-		buf = _calloc(2048, sizeof(char));
-
-		if (buf == NULL)
-			return (-1);
-
-		i = 0;
-		while (format && format[i] != 00)
+		if (format[i] == '%')
 		{
-			if (format[0] == 37 && format[1] == 00)
-			{
+			if (format[i + 1] == '\0')
 				return (-1);
-			}
-			i = _strncat(buf, format, i);
-			if (format[i] == 37)
-			{
-				i++;
-				temp_str = fntn(format[i], argu);
-				_strcat(buf, temp_str);
-			}
-			if (format[i] != 00)
-				i++;
+			f = get_specifiers(format[i + 1]);
+			if (f == NULL)
+				count += handle_percent(format[i], format[i + 1]);
+			else
+				count += f(args);
+			i++;
 		}
-		i = _strlen(buf);
-		write(1, buf, i);
-		va_end(argu);
-		free(buf);
-		return (i);
+		else
+		{
+			_putchar(format[i]);
+			count++;
+		}
+		i++;
 	}
-	return (-1);
+	va_end(args);
+	return (count);
 }
